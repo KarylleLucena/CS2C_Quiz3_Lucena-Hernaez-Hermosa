@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bus Seat Reservation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: start;
+            min-height: 100vh;
+        }
+
+        h1 {
+            color: #65135d;
+            margin-top: 20px;
+        }
+
+        #app {
+            background: #ffffff;
+            border: 1px solid #000000;
+            padding: 20px;
+            width: 80%;
+            max-width: 600px;
+            border-radius: 5px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            font-size: 16px;
+            line-height: 4.5;
+            margin-bottom: 20px;
+            
+            
+        }
+
+        .actions button {
+            font-size: 16px;
+            padding: 10px 15px;
+            margin: 5px;
+            border: none;                            /*Button designnn*/
+            border-radius: 5px;                      
+            cursor: pointer;
+            background-color: #65135d;
+            color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s ease;
+        }
+
+        .actions button:hover {
+            background-color: #863a6c;
+        }
+
+        .actions button:disabled {                      
+            background-color: #000000;
+            cursor: not-allowed;
+        }
+
+        #output {
+            margin-top: 3px;
+            margin-bottom: 3px;
+            color: #65135d;
+        }
+
+        
+        
+    </style>
+</head>
+<body>
+    <h1>Bus Seat Reservation</h1>
+    <div id="app">
+        <div id="output">Welcome to the bus Seat Reservation System!</div>
+        <div class="actions">
+            <button onclick="startAsTicketPerson()">Login as Ticket Person</button>
+            <button onclick="startAsCustomer()">Login as Customer</button>
+        </div>
+    </div>
+    
+    
+    <script>
+      
+        const ticketPersons = [
+            { username: "TicketPerson1", password: "ISPSC123" },          //login credentials 
+        { username: "ticketPerson2", password: "NLPSC123" }
+        ];
+        
+        const buses = [
+            { name: "Cubao", passengers: Array(30).fill("AVAILABLE") },
+            { name: "Baguio", passengers: Array(30).fill("AVAILABLE") },              //arrays
+            { name: "Pasay", passengers: Array(30).fill("AVAILABLE") }
+        ];
+
+        let currentUser = null;
+
+        //helper functions
+        function setOutput(message) {
+            const outputDiv = document.getElementById("output");
+            outputDiv.innerHTML = message;
+        }
+
+        function setActions(buttons) {
+            const actionsDiv = document.querySelector(".actions");
+            actionsDiv.innerHTML = ""; // clear present buttons
+            buttons.forEach(button => {
+                const btnElement = document.createElement("button");
+                btnElement.textContent = button.text;
+                btnElement.onclick = button.action;
+                btnElement.disabled = button.disabled || false;
+                actionsDiv.appendChild(btnElement);
+            });
+        }
+
+        function displayBuses() {
+            return buses.map((bus, index) => `<strong>${index + 1}. ${bus.name}</strong>`).join("<br>");
+        }
+
+        function displayPassengers(busIndex) {
+            const bus = buses[busIndex];
+            return bus.passengers.map((seat, index) => `Seat ${index + 1}: ${seat}`).join("<br>");
+        }
+
+        //ticket person starting point
+        function startAsTicketPerson() {
+            setOutput("Enter your username and password:");
+            setActions([
+                { text: "Login", action: () => loginTicketPerson() },
+                { text: "Back", action: () => mainMenu() }
+            ]);
+        }
+        //login function
+        function loginTicketPerson() {
+            const username = prompt("Enter username:");
+            const password = prompt("Enter password:");
+
+            if (ticketPersons.some(user => user.username === username && user.password === password)) {
+                currentUser = username;
+                ticketPersonMenu();
+            } else {
+                setOutput("Invalid Username or Password. Please try again.");
+                setActions([
+                    { text: "Retry", action: () => startAsTicketPerson() },
+                    { text: "Back", action: () => mainMenu() }
+                ]);
+            }
+        }
+
+        //ticket person menu
+        function ticketPersonMenu() {
+            setOutput("Ticket Person Menu");
+            setActions([
+                { text: "Manage/View Reservations", action: () => manageBuses() },
+                { text: "Logout", action: () => mainMenu() }
+            ]);
+        }
+        
+        function viewBuses() {
+            const busesList = displayBuses();
+            setOutput(`Available Buses:<br>${busesList}`);
+            setActions([
+                { text: "Back", action: () => ticketPersonMenu() }
+            ]);
+        }
+
+        function manageBuses() {
+            const busesList = displayBuses();
+            setOutput(`Select a Bus to Manage:<br>${busesList}`);
+            const buttons = buses.map((bus, index) => ({
+                text: bus.name,
+                action: () => manageBus(index)
+            }));
+            buttons.push({ text: "Back", action: () => ticketPersonMenu() });
+            setActions(buttons);
+        }
+
+        function manageBus(busIndex) {
+            setOutput(`Managing Bus: ${buses[busIndex].name}<br>${displayPassengers(busIndex)}`);
+            setActions([
+                { text: "Add Reservation", action: () => addReservation(busIndex) },
+                { text: "Remove Reservation", action: () => removeReservation(busIndex) },
+                { text: "Back", action: () => manageBuses() }
+            ]);
+        }
+
+        function addReservation(busIndex) {
+            const seatNo = parseInt(prompt("Enter seat number (1-30):")) - 1;
+            if (seatNo >= 0 && seatNo < 30 && buses[busIndex].passengers[seatNo] === "AVAILABLE") {
+                const name = prompt("Enter passenger name:");
+                buses[busIndex].passengers[seatNo] = name;
+                setOutput(`Reservation added successfully.<br>${displayPassengers(busIndex)}`);
+            } else {
+                setOutput("Invalid or already taken seat.");
+            }
+            manageBus(busIndex);
+        }
+
+        function removeReservation(busIndex) {
+            const seatNo = parseInt(prompt("Enter seat number (1-30):")) - 1;
+            if (seatNo >= 0 && seatNo < 30 && buses[busIndex].passengers[seatNo] !== "AVAILABLE") {
+                buses[busIndex].passengers[seatNo] = "AVAILABLE";
+                setOutput(`Reservation removed successfully.<br>${displayPassengers(busIndex)}`);
+            } else {
+                setOutput("Invalid or empty seat.");
+            }
+            manageBus(busIndex);
+        }
+
+        //customer starting point
+        function startAsCustomer() {
+            setOutput("Choose an Action");
+            const buttons = buses.map((bus, index) => ({
+                text: bus.name,
+                action: () => reserveSeat(index)
+            }));
+            buttons.push({ text: "Back", action: () => mainMenu() });
+            setActions(buttons);
+        }
+
+        function reserveSeat(busIndex) {
+            setOutput(`Bus: ${buses[busIndex].name}<br>${displayPassengers(busIndex)}`);
+            setActions([
+                { text: "Reserve a Seat", action: () => makeReservation(busIndex) },
+                { text: "Back", action: () => startAsCustomer() }
+            ]);
+        }
+
+        function makeReservation(busIndex) {
+            const seatNo = parseInt(prompt("Enter seat number (1-30):")) - 1;
+            if (seatNo >= 0 && seatNo < 30 && buses[busIndex].passengers[seatNo] === "AVAILABLE") {
+                const name = prompt("Enter your name:");
+                buses[busIndex].passengers[seatNo] = name;
+                setOutput(`Reservation successful!<br>${displayPassengers(busIndex)}`);
+            } else {
+                setOutput("Invalid or already taken seat.");
+            }
+            reserveSeat(busIndex);
+        }
+
+        //main menu
+        function mainMenu() {
+            setOutput("Welcome! Please select a login choice.");
+            setActions([
+                { text: "Login as Ticket Person", action: () => startAsTicketPerson() },
+                { text: "Login as Customer", action: () => startAsCustomer() }
+            ]);
+        }
+
+        //program start
+        mainMenu();
+    </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bus Seat Reservation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: start;
+            min-height: 100vh;
+        }
+
+        h1 {
+            color: #65135d;
+            margin-top: 20px;
+        }
+
+        #app {
+            background: #ffffff;
+            border: 1px solid #000000;
+            padding: 20px;
+            width: 80%;
+            max-width: 600px;
+            border-radius: 5px;
+            box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+            font-size: 16px;
+            line-height: 4.5;
+            margin-bottom: 20px;
+            
+            
+        }
+
+        .actions button {
+            font-size: 16px;
+            padding: 10px 15px;
+            margin: 5px;
+            border: none;                            /*Button designnn*/
+            border-radius: 5px;                      
+            cursor: pointer;
+            background-color: #65135d;
+            color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s ease;
+        }
+
+        .actions button:hover {
+            background-color: #863a6c;
+        }
+
+        .actions button:disabled {                      
+            background-color: #000000;
+            cursor: not-allowed;
+        }
+
+        #output {
+            margin-top: 3px;
+            margin-bottom: 3px;
+            color: #65135d;
+        }
+
+        
+        
+    </style>
+</head>
+<body>
+    <h1>Bus Seat Reservation</h1>
+    <div id="app">
+        <div id="output">Welcome to the bus Seat Reservation System!</div>
+        <div class="actions">
+            <button onclick="startAsTicketPerson()">Login as Ticket Person</button>
+            <button onclick="startAsCustomer()">Login as Customer</button>
+        </div>
+    </div>
+    
+    
+    <script>
+      
+        const ticketPersons = [
+            { username: "TicketPerson1", password: "ISPSC123" },          //login credentials 
+        { username: "ticketPerson2", password: "NLPSC123" }
+        ];
+        
+        const buses = [
+            { name: "Cubao", passengers: Array(30).fill("AVAILABLE") },
+            { name: "Baguio", passengers: Array(30).fill("AVAILABLE") },              //arrays
+            { name: "Pasay", passengers: Array(30).fill("AVAILABLE") }
+        ];
+
+        let currentUser = null;
+
+        //helper functions
+        function setOutput(message) {
+            const outputDiv = document.getElementById("output");
+            outputDiv.innerHTML = message;
+        }
+
+        function setActions(buttons) {
+            const actionsDiv = document.querySelector(".actions");
+            actionsDiv.innerHTML = ""; // clear present buttons
+            buttons.forEach(button => {
+                const btnElement = document.createElement("button");
+                btnElement.textContent = button.text;
+                btnElement.onclick = button.action;
+                btnElement.disabled = button.disabled || false;
+                actionsDiv.appendChild(btnElement);
+            });
+        }
+
+        function displayBuses() {
+            return buses.map((bus, index) => `<strong>${index + 1}. ${bus.name}</strong>`).join("<br>");
+        }
+
+        function displayPassengers(busIndex) {
+            const bus = buses[busIndex];
+            return bus.passengers.map((seat, index) => `Seat ${index + 1}: ${seat}`).join("<br>");
+        }
+
+        //ticket person starting point
+        function startAsTicketPerson() {
+            setOutput("Enter your username and password:");
+            setActions([
+                { text: "Login", action: () => loginTicketPerson() },
+                { text: "Back", action: () => mainMenu() }
+            ]);
+        }
+        //login function
+        function loginTicketPerson() {
+            const username = prompt("Enter username:");
+            const password = prompt("Enter password:");
+
+            if (ticketPersons.some(user => user.username === username && user.password === password)) {
+                currentUser = username;
+                ticketPersonMenu();
+            } else {
+                setOutput("Invalid Username or Password. Please try again.");
+                setActions([
+                    { text: "Retry", action: () => startAsTicketPerson() },
+                    { text: "Back", action: () => mainMenu() }
+                ]);
+            }
+        }
+
+        //ticket person menu
+        function ticketPersonMenu() {
+            setOutput("Ticket Person Menu");
+            setActions([
+                { text: "Manage/View Reservations", action: () => manageBuses() },
+                { text: "Logout", action: () => mainMenu() }
+            ]);
+        }
+        
+        function viewBuses() {
+            const busesList = displayBuses();
+            setOutput(`Available Buses:<br>${busesList}`);
+            setActions([
+                { text: "Back", action: () => ticketPersonMenu() }
+            ]);
+        }
+
+        function manageBuses() {
+            const busesList = displayBuses();
+            setOutput(`Select a Bus to Manage:<br>${busesList}`);
+            const buttons = buses.map((bus, index) => ({
+                text: bus.name,
+                action: () => manageBus(index)
+            }));
+            buttons.push({ text: "Back", action: () => ticketPersonMenu() });
+            setActions(buttons);
+        }
+
+        function manageBus(busIndex) {
+            setOutput(`Managing Bus: ${buses[busIndex].name}<br>${displayPassengers(busIndex)}`);
+            setActions([
+                { text: "Add Reservation", action: () => addReservation(busIndex) },
+                { text: "Remove Reservation", action: () => removeReservation(busIndex) },
+                { text: "Back", action: () => manageBuses() }
+            ]);
+        }
+
+        function addReservation(busIndex) {
+            const seatNo = parseInt(prompt("Enter seat number (1-30):")) - 1;
+            if (seatNo >= 0 && seatNo < 30 && buses[busIndex].passengers[seatNo] === "AVAILABLE") {
+                const name = prompt("Enter passenger name:");
+                buses[busIndex].passengers[seatNo] = name;
+                setOutput(`Reservation added successfully.<br>${displayPassengers(busIndex)}`);
+            } else {
+                setOutput("Invalid or already taken seat.");
+            }
+            manageBus(busIndex);
+        }
+
+        function removeReservation(busIndex) {
+            const seatNo = parseInt(prompt("Enter seat number (1-30):")) - 1;
+            if (seatNo >= 0 && seatNo < 30 && buses[busIndex].passengers[seatNo] !== "AVAILABLE") {
+                buses[busIndex].passengers[seatNo] = "AVAILABLE";
+                setOutput(`Reservation removed successfully.<br>${displayPassengers(busIndex)}`);
+            } else {
+                setOutput("Invalid or empty seat.");
+            }
+            manageBus(busIndex);
+        }
+
+        //customer starting point
+        function startAsCustomer() {
+            setOutput("Choose an Action");
+            const buttons = buses.map((bus, index) => ({
+                text: bus.name,
+                action: () => reserveSeat(index)
+            }));
+            buttons.push({ text: "Back", action: () => mainMenu() });
+            setActions(buttons);
+        }
+
+        function reserveSeat(busIndex) {
+            setOutput(`Bus: ${buses[busIndex].name}<br>${displayPassengers(busIndex)}`);
+            setActions([
+                { text: "Reserve a Seat", action: () => makeReservation(busIndex) },
+                { text: "Back", action: () => startAsCustomer() }
+            ]);
+        }
+
+        function makeReservation(busIndex) {
+            const seatNo = parseInt(prompt("Enter seat number (1-30):")) - 1;
+            if (seatNo >= 0 && seatNo < 30 && buses[busIndex].passengers[seatNo] === "AVAILABLE") {
+                const name = prompt("Enter your name:");
+                buses[busIndex].passengers[seatNo] = name;
+                setOutput(`Reservation successful!<br>${displayPassengers(busIndex)}`);
+            } else {
+                setOutput("Invalid or already taken seat.");
+            }
+            reserveSeat(busIndex);
+        }
+
+        //main menu
+        function mainMenu() {
+            setOutput("Welcome! Please select a login choice.");
+            setActions([
+                { text: "Login as Ticket Person", action: () => startAsTicketPerson() },
+                { text: "Login as Customer", action: () => startAsCustomer() }
+            ]);
+        }
+
+        //program start
+        mainMenu();
+    </script>
+</body>
+</html>
